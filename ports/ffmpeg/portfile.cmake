@@ -31,7 +31,20 @@ if(NOT VCPKG_TARGET_ARCHITECTURE STREQUAL "wasm32")
     vcpkg_add_to_path("${NASM_EXE_PATH}")
 endif()
 
-set(OPTIONS "--enable-pic --disable-doc --enable-debug --enable-runtime-cpudetect --disable-autodetect")
+set(OPTIONS "--enable-pic --disable-doc --enable-runtime-cpudetect --disable-autodetect")
+
+# Only enable what is used by Vita3K
+string(APPEND OPTIONS " --disable-everything")
+string(APPEND OPTIONS " --enable-decoder=aac --enable-decoder=aac_latm --enable-decoder=atrac3 --enable-decoder=atrac3p --enable-decoder=atrac9 --enable-decoder=mp3 --enable-decoder=pcm_s16le --enable-decoder=pcm_s8")
+string(APPEND OPTIONS " --enable-decoder=mov --enable-decoder=h264 --enable-decoder=mpeg4 --enable-decoder=mpeg2video --enable-decoder=mjpeg --enable-decoder=mjpegb")
+string(APPEND OPTIONS " --enable-encoder=pcm_s16le")
+string(APPEND OPTIONS " --enable-encoder=ffv1 --enable-encoder=mpeg4 --enable-encoder=mjpeg")
+string(APPEND OPTIONS " --enable-muxer=avi")
+string(APPEND OPTIONS " --enable-demuxer=h264 --enable-demuxer=m4v --enable-demuxer=mp3 --enable-demuxer=mpegvideo --enable-demuxer=mpegps --enable-demuxer=mjpeg --enable-demuxer=mov --enable-demuxer=avi --enable-demuxer=aac --enable-demuxer=pmp --enable-demuxer=oma --enable-demuxer=pcm_s16le --enable-demuxer=pcm_s8 --enable-demuxer=wav")
+string(APPEND OPTIONS " --enable-parser=h264 --enable-parser=mpeg4video --enable-parser=mpegaudio --enable-parser=mpegvideo --enable-parser=mjpeg --enable-parser=aac --enable-parser=aac_latm")
+string(APPEND OPTIONS " --enable-protocol=file")
+string(APPEND OPTIONS " --enable-bsf=mjpeg2jpeg")
+string(APPEND OPTIONS " --enable-indev=dshow")
 
 if(VCPKG_HOST_IS_WINDOWS)
     vcpkg_acquire_msys(MSYS_ROOT PACKAGES automake1.16)
@@ -70,7 +83,7 @@ endif()
 vcpkg_cmake_get_vars(cmake_vars_file)
 include("${cmake_vars_file}")
 if(VCPKG_DETECTED_MSVC)
-    string(APPEND OPTIONS " --disable-inline-asm") # clang-cl has inline assembly but this leads to undefined symbols.
+#    string(APPEND OPTIONS " --disable-inline-asm") # clang-cl has inline assembly but this leads to undefined symbols.
     set(OPTIONS "--toolchain=msvc ${OPTIONS}")
     # This is required because ffmpeg depends upon optimizations to link correctly
     string(APPEND VCPKG_COMBINED_C_FLAGS_DEBUG " -O2")
@@ -148,6 +161,14 @@ if(VCPKG_DETECTED_CMAKE_RANLIB)
     set(ENV{RANLIB} "${RANLIB_filename}")
     string(APPEND OPTIONS " --ranlib=${RANLIB_filename}")
     list(APPEND prog_env "${RANLIB_path}")
+endif()
+
+if(VCPKG_DETECTED_CMAKE_STRIP)
+    get_filename_component(STRIP_path "${VCPKG_DETECTED_CMAKE_STRIP}" DIRECTORY)
+    get_filename_component(STRIP_filename "${VCPKG_DETECTED_CMAKE_STRIP}" NAME)
+    set(ENV{STRIP} "${STRIP_filename}")
+    string(APPEND OPTIONS " --strip=${STRIP_filename}")
+    list(APPEND prog_env "${STRIP_path}")
 endif()
 
 list(REMOVE_DUPLICATES prog_env)
